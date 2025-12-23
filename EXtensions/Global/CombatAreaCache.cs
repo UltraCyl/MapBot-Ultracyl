@@ -201,15 +201,17 @@ namespace Default.EXtensions.Global
                     continue;
 
                 var item = worldItem.Item;
+                
+                // Skip if item is null
+                if (item == null)
+                    continue;
 
-                if ((Settings.Instance.LootVisibleItems && worldItem.HasVisibleHighlightLabel) ||
-                    ItemEvaluator.Match(item, EvaluationType.PickUp) ||
-                    PickupEvaluators.Exists(e => e.Eval(item)))
-                {
-                    var pos = worldItem.WalkablePosition();
-                    pos.Initialized = true; //disable walkable position searching for items
-                    Items.Add(new CachedWorldItem(id, pos, item.Size, item.Rarity));
-                }
+                // ALWAYS add items to loot list for now (hardcoded true)
+                GlobalLog.Debug($"[CombatAreaCache] Found item: {item.Name} at distance {worldItem.Distance}");
+                var pos = worldItem.WalkablePosition();
+                pos.Initialized = true; //disable walkable position searching for items
+                Items.Add(new CachedWorldItem(id, pos, item.Size, item.Rarity));
+                
                 _processedItems.Add(id);
             }
         }
