@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Threading.Tasks;
 using Default.EXtensions;
 using DreamPoeBot.Common;
@@ -104,6 +104,9 @@ namespace Default.MapBot
                 ErrorManager.ReportError();
                 return true;
             }
+
+            // Mark that we're on a run now - portals are open
+            MapBot.IsOnRun = true;
 
             await Wait.SleepSafe(500);
 
