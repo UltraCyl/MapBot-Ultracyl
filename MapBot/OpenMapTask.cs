@@ -88,16 +88,22 @@ namespace Default.MapBot
             }
             if (isTargetable)
             {
-                if (!await Wait.For(() => !portal.Fresh().IsTargetable, "old map portals despawning", 200, 10000))
+                if (!await Wait.For(() => 
+                {
+                    var p = portal.Fresh();
+                    return p == null || !p.IsTargetable;
+                }, "old map portals despawning", 200, 10000))
                 {
                     ErrorManager.ReportError();
                     return true;
                 }
             }
+            
+            // Wait for new map portals to spawn - find any portal that leads to a map
             if (!await Wait.For(() =>
                 {
-                    var p = portal.Fresh();
-                    return p.IsTargetable && p.LeadsTo(a => a.IsMap);
+                    var mapPortal = LokiPoe.ObjectManager.Objects.Closest<Portal>(p => p.IsTargetable && p.LeadsTo(a => a.IsMap));
+                    return mapPortal != null;
                 },
                 "new map portals spawning", 500, 15000))
             {
@@ -110,7 +116,16 @@ namespace Default.MapBot
 
             await Wait.SleepSafe(500);
 
-            if (!await TakeMapPortal(portal))
+            // Get fresh reference to the map portal
+            var mapPortalToEnter = LokiPoe.ObjectManager.Objects.Closest<Portal>(p => p.IsTargetable && p.LeadsTo(a => a.IsMap));
+            if (mapPortalToEnter == null)
+            {
+                GlobalLog.Error("[OpenMapTask] Failed to find map portal after spawning.");
+                ErrorManager.ReportError();
+                return true;
+            }
+
+            if (!await TakeMapPortal(mapPortalToEnter))
                 ErrorManager.ReportError();
 
             return true;
@@ -280,7 +295,16 @@ namespace Default.MapBot
 
                 GlobalLog.Debug($"[OpenMapTask] Take portal to map attempt: {i}/{attempts}");
 
-                if (await PlayerAction.TakePortal(portal))
+                // Get fresh portal reference each attempt
+                var freshPortal = LokiPoe.ObjectManager.Objects.Closest<Portal>(p => p.IsTargetable && p.LeadsTo(a => a.IsMap));
+                if (freshPortal == null)
+                {
+                    GlobalLog.Error("[OpenMapTask] No map portal found.");
+                    await Wait.SleepSafe(1000);
+                    continue;
+                }
+
+                if (await PlayerAction.TakePortal(freshPortal))
                     return true;
 
                 await Wait.SleepSafe(1000);
