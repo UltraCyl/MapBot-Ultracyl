@@ -201,6 +201,10 @@ namespace Default.EXtensions.Global
                     continue;
 
                 var item = worldItem.Item;
+                
+                // Skip if item is null
+                if (item == null)
+                    continue;
 
                 // LootAllItems will pick up everything, LootVisibleItems requires visible label
                 if (Settings.Instance.LootAllItems ||
@@ -208,6 +212,7 @@ namespace Default.EXtensions.Global
                     ItemEvaluator.Match(item, EvaluationType.PickUp) ||
                     PickupEvaluators.Exists(e => e.Eval(item)))
                 {
+                    GlobalLog.Debug($"[CombatAreaCache] Found item to loot: {item.Name}");
                     var pos = worldItem.WalkablePosition();
                     pos.Initialized = true; //disable walkable position searching for items
                     Items.Add(new CachedWorldItem(id, pos, item.Size, item.Rarity));
