@@ -135,6 +135,11 @@ namespace Default.EXtensions.Global
 
             if (ItemScanInterval.Elapsed)
             {
+                // Enable always highlight so we can detect which items are visible
+                if (!LokiPoe.ConfigManager.IsAlwaysHighlightEnabled)
+                {
+                    LokiPoe.Input.SimulateKeyEvent(LokiPoe.Input.Binding.highlight_toggle, true, false, false);
+                }
                 WorldItemScan();
             }
 
@@ -206,11 +211,20 @@ namespace Default.EXtensions.Global
                 if (item == null)
                     continue;
 
-                // ALWAYS add items to loot list for now (hardcoded true)
-                GlobalLog.Debug($"[CombatAreaCache] Found item: {item.Name} at distance {worldItem.Distance}");
-                var pos = worldItem.WalkablePosition();
-                pos.Initialized = true; //disable walkable position searching for items
-                Items.Add(new CachedWorldItem(id, pos, item.Size, item.Rarity));
+                // Only loot items that have a visible label (shown by your loot filter)
+                // HasVisibleHighlightLabel checks if the item label is currently displayed
+                // We also check IsTargetable as a fallback
+                bool shouldLoot = worldItem.HasVisibleHighlightLabel || 
+                                  ItemEvaluator.Match(item, EvaluationType.PickUp) ||
+                                  PickupEvaluators.Exists(e => e.Eval(item));
+                
+                if (shouldLoot)
+                {
+                    GlobalLog.Debug($"[CombatAreaCache] Found item to loot: {item.Name}");
+                    var pos = worldItem.WalkablePosition();
+                    pos.Initialized = true; //disable walkable position searching for items
+                    Items.Add(new CachedWorldItem(id, pos, item.Size, item.Rarity));
+                }
                 
                 _processedItems.Add(id);
             }

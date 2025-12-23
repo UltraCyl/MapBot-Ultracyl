@@ -192,7 +192,7 @@ namespace Default.EXtensions
                     return null;
                 }
                 await Coroutines.FinishCurrentAction();
-                await Wait.SleepSafe(100);
+                await Wait.SleepSafe(500);
             }
             else
             {
@@ -227,9 +227,49 @@ namespace Default.EXtensions
 
                 await Coroutines.CloseBlockingWindows();
             }
+            
+            // Wait longer for portal to spawn and become targetable
+            await Wait.SleepSafe(1000);
+            
             Portal portal = null;
-            await Wait.For(() => (portal = PortalInRangeOf(40)) != null, "portal spawning");
-            return portal;
+            
+            // Try multiple times to find the portal
+            for (int i = 0; i < 15; i++)
+            {
+                // Method 1: Check for player portal with IsPlayerPortal
+                portal = PortalInRangeOf(60);
+                if (portal != null)
+                {
+                    GlobalLog.Debug($"[CreateTownPortal] Found player portal at distance {portal.Distance}");
+                    return portal;
+                }
+                
+                // Method 2: Check for any targetable portal that leads to town/hideout
+                portal = LokiPoe.ObjectManager.Objects.Closest<Portal>(p => 
+                    p.IsTargetable && 
+                    p.Distance <= 60 && 
+                    p.LeadsTo(a => a.IsTown || a.IsHideoutArea));
+                if (portal != null)
+                {
+                    GlobalLog.Debug($"[CreateTownPortal] Found town portal at distance {portal.Distance}");
+                    return portal;
+                }
+                
+                // Method 3: Check for any portal with player portal metadata
+                portal = LokiPoe.ObjectManager.Objects.Closest<Portal>(p => 
+                    p.Distance <= 60 && 
+                    (p.Metadata.Contains("PlayerPortal") || p.Metadata.Contains("MapReturnPortal")));
+                if (portal != null)
+                {
+                    GlobalLog.Debug($"[CreateTownPortal] Found portal by metadata at distance {portal.Distance}");
+                    return portal;
+                }
+                
+                await Wait.SleepSafe(500);
+            }
+            
+            GlobalLog.Error("[CreateTownPortal] Could not find any portal after 15 attempts");
+            return null;
         }
 
         public static async Task<bool> TpToTown(bool forceNewPortal = false, bool repeatUntilInTown = true)
