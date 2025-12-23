@@ -522,7 +522,7 @@ namespace Default.EXtensions
         #region Misc
 
         public bool SellExcessPortals { get; set; } = true;
-        public bool LootVisibleItems { get; set; }
+        public bool LootVisibleItems { get; set; } = true;
         public bool UseChatForHideout { get; set; }
         public int MinInventorySquares { get; set; } = 0;
 
