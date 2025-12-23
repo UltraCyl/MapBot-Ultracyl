@@ -8,24 +8,9 @@ namespace Default.MapBot
     {
         public async Task<bool> Run()
         {
-            if (GeneralSettings.Instance.UseHideout)
-                return false;
-
-            var area = World.CurrentArea;
-            if (area.IsMapRoom || area.IsMap)
-                return false;
-
-            if (area.IsTown || area.IsHideoutArea)
-            {
-                if (!await PlayerAction.TakeWaypoint(World.Act11.TemplarLaboratory))
-                    ErrorManager.ReportError();
-            }
-            else
-            {
-                if (!await PlayerAction.TpToTown())
-                    ErrorManager.ReportError();
-            }
-            return true;
+            // Templar Laboratory is no longer used in modern PoE
+            // Always use hideout instead
+            return false;
         }
 
         #region Unused interface methods
