@@ -593,7 +593,6 @@ namespace Default.EXtensions
         static MapNames()
         {
             var areaDict = Dat.WorldAreas.ToDictionary(a => a.Id, a => a.Name);
-            bool error = false;
 
             foreach (var field in typeof(MapNames).GetFields())
             {
@@ -608,11 +607,12 @@ namespace Default.EXtensions
                 }
                 else
                 {
-                    GlobalLog.Error($"[MapNames] Cannot initialize \"{field.Name}\" field. DatWorldAreas does not contain area with \"{attr.Id}\" id.");
-                    error = true;
+                    // Log warning but don't stop - map might not exist in current game version
+                    GlobalLog.Warn($"[MapNames] Cannot initialize \"{field.Name}\" field. DatWorldAreas does not contain area with \"{attr.Id}\" id. This map will be skipped.");
+                    // Set to a placeholder so it's not null
+                    field.SetValue(null, $"Unknown_{field.Name}");
                 }
             }
-            if (error) BotManager.Stop();
         }
     }
 }
