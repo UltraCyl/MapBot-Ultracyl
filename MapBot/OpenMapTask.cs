@@ -78,36 +78,35 @@ namespace Default.MapBot
                 await PlayerAction.TryTo(() => PlaceIntoDevice(fragment.LocationTopLeft), "Place vaal fragment into device", 3);
             }
 
-            var portal = LokiPoe.ObjectManager.Objects.Closest<Portal>();
-            if (portal == null)
-            {
-                GlobalLog.Error("[OpenMapTask] Unknown error. Fail to find any portal near map device.");
-                ErrorManager.ReportError();
-                return true;
-            }
+            // Check for existing portal (might exist from previous run)
+            var existingPortal = LokiPoe.ObjectManager.Objects.Closest<Portal>();
+            var hadExistingPortal = existingPortal != null && existingPortal.IsTargetable;
 
-            var isTargetable = portal.IsTargetable;
-
+            // Activate the map device
             if (!await PlayerAction.TryTo(ActivateDevice, "Activate Map Device", 3))
             {
                 ErrorManager.ReportError();
                 return true;
             }
-            if (isTargetable)
+            
+            // If there was an existing portal, wait for it to despawn
+            if (hadExistingPortal && existingPortal != null)
             {
-                if (!await Wait.For(() => !portal.Fresh().IsTargetable, "old map portals despawning", 200, 10000))
+                if (!await Wait.For(() => !existingPortal.Fresh().IsTargetable, "old map portals despawning", 200, 10000))
                 {
-                    ErrorManager.ReportError();
-                    return true;
+                    GlobalLog.Warn("[OpenMapTask] Old portals didn't despawn, continuing anyway.");
                 }
             }
+            
+            // Wait for new map portals to spawn
             if (!await Wait.For(() =>
                 {
-                    var p = portal.Fresh();
-                    return p.IsTargetable && p.LeadsTo(a => a.IsMap);
+                    var p = LokiPoe.ObjectManager.Objects.Closest<Portal>();
+                    return p != null && p.IsTargetable && p.LeadsTo(a => a.IsMap);
                 },
                 "new map portals spawning", 500, 15000))
             {
+                GlobalLog.Error("[OpenMapTask] Failed to find map portals after activating device.");
                 ErrorManager.ReportError();
                 return true;
             }
@@ -116,6 +115,14 @@ namespace Default.MapBot
             MapBot.IsOnRun = true;
 
             await Wait.SleepSafe(500);
+
+            var portal = LokiPoe.ObjectManager.Objects.Closest<Portal>(p => p.IsTargetable && p.LeadsTo(a => a.IsMap));
+            if (portal == null)
+            {
+                GlobalLog.Error("[OpenMapTask] Portals spawned but now can't find them.");
+                ErrorManager.ReportError();
+                return true;
+            }
 
             if (!await TakeMapPortal(portal))
                 ErrorManager.ReportError();
@@ -198,56 +205,18 @@ namespace Default.MapBot
                 GlobalLog.Error("[OpenMapTask] Unexpected error. There is no map in the Map Device.");
                 return false;
             }
-            
-            GlobalLog.Debug($"[OpenMapTask] Found map in device: {map.Name}");
-            GlobalLog.Debug($"[OpenMapTask] Current area is hideout: {World.CurrentArea.IsHideoutArea}");
 
             LokiPoe.InGameState.ActivateResult activated;
 
             if (World.CurrentArea.IsHideoutArea)
             {
-                GlobalLog.Debug("[OpenMapTask] Using MasterDeviceUi.Activate()");
-                
-                // Check if MasterDeviceUi is available
-                var masterDevice = LokiPoe.InGameState.MasterDeviceUi;
-                GlobalLog.Debug($"[OpenMapTask] MasterDeviceUi.IsOpened: {masterDevice?.IsOpened}");
-                
-                if (MapSettings.Instance.MapDict.TryGetValue(map.CleanName(), out var data) && data.ZanaMod > 0)
-                {
-                    var modIndex = data.ZanaMod;
-                    var deviceOptions = LokiPoe.InGameState.MasterDeviceUi.Options;
-                    var maxIndex = deviceOptions.Count - 1;
-
-                    if (modIndex > maxIndex)
-                    {
-                        GlobalLog.Error($"[OpenMapTask] Invalid Zana mod index {modIndex}. Map Device has only {maxIndex} indexes. Please correct your map settings.");
-                        activated = LokiPoe.InGameState.MasterDeviceUi.Activate();
-                    }
-                    else if (deviceOptions[modIndex].Item3.Contains("<red>"))
-                    {
-                        GlobalLog.Warn("[OpenMapTask] Not enough currency to pay for Zana mod activation.");
-                        activated = LokiPoe.InGameState.MasterDeviceUi.Activate();
-                    }
-                    else
-                    {
-                        GlobalLog.Warn($"[OpenMapTask] Opening {map.Name} with {deviceOptions[modIndex].Item1} mod.");
-                        // ActivateWithOption no longer exists in DreamPoeBot API - using Activate instead
-                        activated = LokiPoe.InGameState.MasterDeviceUi.Activate();
-                    }
-                }
-                else
-                {
-                    GlobalLog.Debug("[OpenMapTask] No Zana mod specified, activating normally.");
-                    activated = LokiPoe.InGameState.MasterDeviceUi.Activate();
-                }
+                // Simply activate the map device in hideout
+                activated = LokiPoe.InGameState.MasterDeviceUi.Activate();
             }
             else
             {
-                GlobalLog.Debug("[OpenMapTask] Using MapDeviceUi.Activate()");
                 activated = LokiPoe.InGameState.MapDeviceUi.Activate();
             }
-
-            GlobalLog.Debug($"[OpenMapTask] Activate result: {activated}");
 
             if (activated != LokiPoe.InGameState.ActivateResult.None)
             {

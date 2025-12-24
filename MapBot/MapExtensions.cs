@@ -20,7 +20,9 @@ namespace Default.MapBot
 
         public static string CleanName(this Item map)
         {
-            return map.RarityLite() == Rarity.Unique ? map.FullName : map.MapArea.Name;
+            if (map == null) return string.Empty;
+            if (map.RarityLite() == Rarity.Unique) return map.FullName ?? string.Empty;
+            return map.MapArea?.Name ?? map.Name ?? string.Empty;
         }
 
         public static bool BelowTierLimit(this Item map)
@@ -47,7 +49,7 @@ namespace Default.MapBot
 
             var priority = data.Priority;
 
-            if (map.Name.StartsWith("Shaped"))
+            if (map.Name != null && map.Name.StartsWith("Shaped"))
                 priority += GeneralSettings.ShapedPriority;
 
             if (AtlasData.IsShaperInfluenced(cleanName))
