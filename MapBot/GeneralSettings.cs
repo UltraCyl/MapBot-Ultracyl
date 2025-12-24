@@ -16,14 +16,14 @@ namespace Default.MapBot
         }
 
         public bool UseHideout { get; set; } = true;
-        public int MaxMapTier { get; set; } = 10;
+        public int MaxMapTier { get; set; } = 17;
         public int MobRemaining { get; set; } = 20;
         public bool StrictMobRemaining { get; set; }
         public int ExplorationPercent { get; set; } = 85;
         public bool StrictExplorationPercent { get; set; }
         public bool TrackMob { get; set; } = true;
         public bool FastTransition { get; set; } = true;
-        public bool RunUnId { get; set; }
+        public bool RunUnId { get; set; } = true;
         public bool IgnoreHiddenAuras { get; set; }
         public Trials Trials { get; set; } = new Trials();
 

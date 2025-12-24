@@ -153,11 +153,22 @@ namespace Default.MapBot
         private static Item FindProperMap()
         {
             var maps = new List<Item>();
+            var stashItems = Inventories.StashTabItems.ToList();
+            
+            GlobalLog.Debug($"[TakeMapTask] Found {stashItems.Count} items in stash tab.");
+            
+            var mapItems = stashItems.Where(i => i.IsMap()).ToList();
+            GlobalLog.Debug($"[TakeMapTask] Found {mapItems.Count} map items in stash tab.");
 
-            foreach (var map in Inventories.StashTabItems.Where(i => i.IsMap()))
+            foreach (var map in mapItems)
             {
+                GlobalLog.Debug($"[TakeMapTask] Checking map: \"{map.Name}\" (Tier: {map.MapTier}, Rarity: {map.RarityLite()}, Identified: {map.IsIdentified})");
+                
                 if (map.Ignored())
+                {
+                    GlobalLog.Debug($"[TakeMapTask] Map \"{map.Name}\" is ignored, skipping.");
                     continue;
+                }
 
                 var rarity = map.RarityLite();
                 if (rarity == Rarity.Unique)
@@ -167,28 +178,46 @@ namespace Default.MapBot
                 }
 
                 if (!map.BelowTierLimit())
+                {
+                    GlobalLog.Debug($"[TakeMapTask] Map \"{map.Name}\" (Tier {map.MapTier}) is above MaxMapTier ({Settings.MaxMapTier}), skipping.");
                     continue;
+                }
 
                 if (rarity == Rarity.Rare && Settings.ExistingRares == ExistingRares.NoRun && NoRareUpgrade(map))
+                {
+                    GlobalLog.Debug($"[TakeMapTask] Map \"{map.Name}\" skipped due to ExistingRares=NoRun.");
                     continue;
+                }
 
                 if (!Settings.RunUnId && !map.IsIdentified)
+                {
+                    GlobalLog.Debug($"[TakeMapTask] Map \"{map.Name}\" is unidentified and RunUnId=false, skipping.");
                     continue;
+                }
 
                 if (map.HasBannedAffix())
                 {
                     if (map.IsCorrupted || map.IsMirrored)
+                    {
+                        GlobalLog.Debug($"[TakeMapTask] Map \"{map.Name}\" has banned affix and is corrupted/mirrored, skipping.");
                         continue;
+                    }
 
                     if (rarity == Rarity.Magic && !HasMagicOrbs)
+                    {
+                        GlobalLog.Debug($"[TakeMapTask] Map \"{map.Name}\" has banned affix and no magic orbs, skipping.");
                         continue;
+                    }
 
                     if (rarity == Rarity.Rare)
                     {
                         if (NoRareUpgrade(map))
                         {
                             if (Settings.ExistingRares == ExistingRares.NoReroll)
+                            {
+                                GlobalLog.Debug($"[TakeMapTask] Map \"{map.Name}\" has banned affix and NoReroll, skipping.");
                                 continue;
+                            }
 
                             if (Settings.ExistingRares == ExistingRares.Downgrade)
                             {
@@ -198,13 +227,19 @@ namespace Default.MapBot
                         }
 
                         if (!HasRareOrbs)
+                        {
+                            GlobalLog.Debug($"[TakeMapTask] Map \"{map.Name}\" has banned affix and no rare orbs, skipping.");
                             continue;
+                        }
                     }
                 }
 
+                GlobalLog.Debug($"[TakeMapTask] Map \"{map.Name}\" passed all checks, adding to list.");
                 maps.Add(map);
             }
 
+            GlobalLog.Debug($"[TakeMapTask] Total valid maps found: {maps.Count}");
+            
             if (maps.Count == 0)
                 return null;
 
