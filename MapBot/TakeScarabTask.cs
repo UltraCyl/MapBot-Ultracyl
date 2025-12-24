@@ -207,16 +207,10 @@ namespace Default.MapBot
 
             try
             {
-                // Try to get items from fragment tab
-                // The fragment tab has multiple inventory controls for different item types
-                var fragmentTab = StashUi.FragmentTab;
-                if (fragmentTab != null)
-                {
-                    // Get all inventory controls and their items
-                    // This is a simplified approach - the actual API may have specific methods
-                    var stashItems = Inventories.StashTabItems;
-                    items.AddRange(stashItems);
-                }
+                // Get all items from the current stash tab
+                // For fragment tabs, Inventories.StashTabItems should work
+                var stashItems = Inventories.StashTabItems;
+                items.AddRange(stashItems);
             }
             catch (System.Exception ex)
             {
