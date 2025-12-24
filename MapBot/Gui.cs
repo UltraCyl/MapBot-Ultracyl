@@ -21,6 +21,17 @@ namespace Default.MapBot
         internal DataGrid MapGrid;
         internal TextBox AffixSearchTextBox;
         internal DataGrid AffixGrid;
+        
+        // Scarab controls
+        internal CheckBox UseScarabsCheckBox;
+        internal RadioButton Slots4Radio;
+        internal RadioButton Slots5Radio;
+        internal RadioButton Slots6Radio;
+        internal ComboBox ScarabSlot1ComboBox;
+        internal ComboBox ScarabSlot2ComboBox;
+        internal ComboBox ScarabSlot3ComboBox;
+        internal ComboBox ScarabSlot4ComboBox;
+        internal ComboBox ScarabSlot5ComboBox;
 
         public Gui()
         {
@@ -68,6 +79,9 @@ namespace Default.MapBot
                             // Setup collection views
                             _mapCollectionView = CollectionViewSource.GetDefaultView(MapSettings.Instance.MapList);
                             _affixCollectionView = CollectionViewSource.GetDefaultView(AffixSettings.Instance.AffixList);
+                            
+                            // Setup Scarab controls
+                            SetupScarabControls();
                         }
                     }
                 }
@@ -90,6 +104,67 @@ namespace Default.MapBot
                     Margin = new Thickness(10)
                 };
             }
+        }
+        
+        private void SetupScarabControls()
+        {
+            var settings = ScarabSettings.Instance;
+            
+            // Find scarab controls
+            UseScarabsCheckBox = FindDescendant<CheckBox>(this, "UseScarabsCheckBox");
+            Slots4Radio = FindDescendant<RadioButton>(this, "Slots4Radio");
+            Slots5Radio = FindDescendant<RadioButton>(this, "Slots5Radio");
+            Slots6Radio = FindDescendant<RadioButton>(this, "Slots6Radio");
+            ScarabSlot1ComboBox = FindDescendant<ComboBox>(this, "ScarabSlot1ComboBox");
+            ScarabSlot2ComboBox = FindDescendant<ComboBox>(this, "ScarabSlot2ComboBox");
+            ScarabSlot3ComboBox = FindDescendant<ComboBox>(this, "ScarabSlot3ComboBox");
+            ScarabSlot4ComboBox = FindDescendant<ComboBox>(this, "ScarabSlot4ComboBox");
+            ScarabSlot5ComboBox = FindDescendant<ComboBox>(this, "ScarabSlot5ComboBox");
+            
+            // Setup UseScarabs checkbox
+            if (UseScarabsCheckBox != null)
+            {
+                UseScarabsCheckBox.IsChecked = settings.UseScarabs;
+                UseScarabsCheckBox.Checked += (s, e) => { settings.UseScarabs = true; };
+                UseScarabsCheckBox.Unchecked += (s, e) => { settings.UseScarabs = false; };
+            }
+            
+            // Setup Map Device Slots radio buttons
+            if (Slots4Radio != null)
+            {
+                Slots4Radio.IsChecked = settings.MapDeviceSlots == 4;
+                Slots4Radio.Checked += (s, e) => { settings.MapDeviceSlots = 4; };
+            }
+            if (Slots5Radio != null)
+            {
+                Slots5Radio.IsChecked = settings.MapDeviceSlots == 5;
+                Slots5Radio.Checked += (s, e) => { settings.MapDeviceSlots = 5; };
+            }
+            if (Slots6Radio != null)
+            {
+                Slots6Radio.IsChecked = settings.MapDeviceSlots == 6;
+                Slots6Radio.Checked += (s, e) => { settings.MapDeviceSlots = 6; };
+            }
+            
+            // Setup scarab combo boxes
+            SetupScarabComboBox(ScarabSlot1ComboBox, settings.ScarabSlot1, v => settings.ScarabSlot1 = v);
+            SetupScarabComboBox(ScarabSlot2ComboBox, settings.ScarabSlot2, v => settings.ScarabSlot2 = v);
+            SetupScarabComboBox(ScarabSlot3ComboBox, settings.ScarabSlot3, v => settings.ScarabSlot3 = v);
+            SetupScarabComboBox(ScarabSlot4ComboBox, settings.ScarabSlot4, v => settings.ScarabSlot4 = v);
+            SetupScarabComboBox(ScarabSlot5ComboBox, settings.ScarabSlot5, v => settings.ScarabSlot5 = v);
+        }
+        
+        private void SetupScarabComboBox(ComboBox comboBox, string currentValue, Action<string> setter)
+        {
+            if (comboBox == null) return;
+            
+            comboBox.ItemsSource = ScarabSettings.AvailableScarabs;
+            comboBox.SelectedItem = currentValue;
+            comboBox.SelectionChanged += (s, e) =>
+            {
+                if (comboBox.SelectedItem != null)
+                    setter(comboBox.SelectedItem.ToString());
+            };
         }
         
         private static string GetXamlPath(string folder, string filename)

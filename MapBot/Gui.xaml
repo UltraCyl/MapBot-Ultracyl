@@ -841,79 +841,39 @@
         </TabItem>
 
         <TabItem BorderThickness="1"
-                 DataContext="{x:Static local:ScarabSettings.Instance}"
-                 Header="Scarabs">
+                 Header="Scarabs"
+                 x:Name="ScarabsTab">
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="10" Orientation="Vertical">
+                <StackPanel Margin="10" Orientation="Vertical" x:Name="ScarabsPanel">
                     
                     <CheckBox x:Name="UseScarabsCheckBox"
                               Margin="0,5,0,0"
                               Content="Enable Scarabs"
-                              IsChecked="{Binding Path=UseScarabs}"
                               FontWeight="Bold" />
                     
                     <TextBlock Margin="0,10,0,5" 
-                               Text="Map Device Slots:" 
-                               IsEnabled="{Binding ElementName=UseScarabsCheckBox, Path=IsChecked}" />
+                               Text="Map Device Slots:" />
                     
-                    <StackPanel Orientation="Horizontal" IsEnabled="{Binding ElementName=UseScarabsCheckBox, Path=IsChecked}">
-                        <RadioButton Content="4 Slots" Margin="0,0,15,0"
-                                     IsChecked="{Binding Path=MapDeviceSlots, Converter={x:Static local:Gui.IntToBoolConverter.Instance}, ConverterParameter=4}" />
-                        <RadioButton Content="5 Slots" Margin="0,0,15,0"
-                                     IsChecked="{Binding Path=MapDeviceSlots, Converter={x:Static local:Gui.IntToBoolConverter.Instance}, ConverterParameter=5}" />
-                        <RadioButton Content="6 Slots"
-                                     IsChecked="{Binding Path=MapDeviceSlots, Converter={x:Static local:Gui.IntToBoolConverter.Instance}, ConverterParameter=6}" />
+                    <StackPanel Orientation="Horizontal" x:Name="MapDeviceSlotsPanel">
+                        <RadioButton Content="4 Slots" Margin="0,0,15,0" x:Name="Slots4Radio" />
+                        <RadioButton Content="5 Slots" Margin="0,0,15,0" x:Name="Slots5Radio" />
+                        <RadioButton Content="6 Slots" x:Name="Slots6Radio" />
                     </StackPanel>
                     
-                    <TextBlock Margin="0,15,0,5" 
-                               Text="Scarab Slot 1 (uses 1 map device slot):" 
-                               IsEnabled="{Binding ElementName=UseScarabsCheckBox, Path=IsChecked}" />
-                    <ComboBox x:Name="ScarabSlot1ComboBox"
-                              Width="300"
-                              HorizontalAlignment="Left"
-                              ItemsSource="{x:Static local:ScarabSettings.AvailableScarabs}"
-                              SelectedItem="{Binding Path=ScarabSlot1}"
-                              IsEnabled="{Binding ElementName=UseScarabsCheckBox, Path=IsChecked}" />
+                    <TextBlock Margin="0,15,0,5" Text="Scarab Slot 1:" />
+                    <ComboBox x:Name="ScarabSlot1ComboBox" Width="300" HorizontalAlignment="Left" />
                     
-                    <TextBlock Margin="0,10,0,5" 
-                               Text="Scarab Slot 2 (uses 1 map device slot):" 
-                               IsEnabled="{Binding ElementName=UseScarabsCheckBox, Path=IsChecked}" />
-                    <ComboBox x:Name="ScarabSlot2ComboBox"
-                              Width="300"
-                              HorizontalAlignment="Left"
-                              ItemsSource="{x:Static local:ScarabSettings.AvailableScarabs}"
-                              SelectedItem="{Binding Path=ScarabSlot2}"
-                              IsEnabled="{Binding ElementName=UseScarabsCheckBox, Path=IsChecked}" />
+                    <TextBlock Margin="0,10,0,5" Text="Scarab Slot 2:" />
+                    <ComboBox x:Name="ScarabSlot2ComboBox" Width="300" HorizontalAlignment="Left" />
                     
-                    <TextBlock Margin="0,10,0,5" 
-                               Text="Scarab Slot 3 (uses 1 map device slot):" 
-                               IsEnabled="{Binding ElementName=UseScarabsCheckBox, Path=IsChecked}" />
-                    <ComboBox x:Name="ScarabSlot3ComboBox"
-                              Width="300"
-                              HorizontalAlignment="Left"
-                              ItemsSource="{x:Static local:ScarabSettings.AvailableScarabs}"
-                              SelectedItem="{Binding Path=ScarabSlot3}"
-                              IsEnabled="{Binding ElementName=UseScarabsCheckBox, Path=IsChecked}" />
+                    <TextBlock Margin="0,10,0,5" Text="Scarab Slot 3:" />
+                    <ComboBox x:Name="ScarabSlot3ComboBox" Width="300" HorizontalAlignment="Left" />
                     
-                    <TextBlock Margin="0,10,0,5" 
-                               Text="Scarab Slot 4 (uses 1 map device slot):" 
-                               IsEnabled="{Binding ElementName=UseScarabsCheckBox, Path=IsChecked}" />
-                    <ComboBox x:Name="ScarabSlot4ComboBox"
-                              Width="300"
-                              HorizontalAlignment="Left"
-                              ItemsSource="{x:Static local:ScarabSettings.AvailableScarabs}"
-                              SelectedItem="{Binding Path=ScarabSlot4}"
-                              IsEnabled="{Binding ElementName=UseScarabsCheckBox, Path=IsChecked}" />
+                    <TextBlock Margin="0,10,0,5" Text="Scarab Slot 4:" />
+                    <ComboBox x:Name="ScarabSlot4ComboBox" Width="300" HorizontalAlignment="Left" />
                     
-                    <TextBlock Margin="0,10,0,5" 
-                               Text="Scarab Slot 5 (uses 1 map device slot):" 
-                               IsEnabled="{Binding ElementName=UseScarabsCheckBox, Path=IsChecked}" />
-                    <ComboBox x:Name="ScarabSlot5ComboBox"
-                              Width="300"
-                              HorizontalAlignment="Left"
-                              ItemsSource="{x:Static local:ScarabSettings.AvailableScarabs}"
-                              SelectedItem="{Binding Path=ScarabSlot5}"
-                              IsEnabled="{Binding ElementName=UseScarabsCheckBox, Path=IsChecked}" />
+                    <TextBlock Margin="0,10,0,5" Text="Scarab Slot 5:" />
+                    <ComboBox x:Name="ScarabSlot5ComboBox" Width="300" HorizontalAlignment="Left" />
                     
                     <TextBlock Margin="0,20,0,0" 
                                Text="Note: Select 'None' to leave a slot empty."
