@@ -1,3 +1,4 @@
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Default.EXtensions;
@@ -65,6 +66,12 @@ namespace Default.MapBot
                 return true;
             }
 
+            // Add scarabs if enabled
+            if (ScarabSettings.Instance.UseScarabs)
+            {
+                await AddScarabsToDevice();
+            }
+
             var fragment = Inventories.InventoryItems.Find(i => i.IsSacrificeFragment());
             if (fragment != null)
             {
@@ -88,22 +95,16 @@ namespace Default.MapBot
             }
             if (isTargetable)
             {
-                if (!await Wait.For(() => 
-                {
-                    var p = portal.Fresh();
-                    return p == null || !p.IsTargetable;
-                }, "old map portals despawning", 200, 10000))
+                if (!await Wait.For(() => !portal.Fresh().IsTargetable, "old map portals despawning", 200, 10000))
                 {
                     ErrorManager.ReportError();
                     return true;
                 }
             }
-            
-            // Wait for new map portals to spawn - find any portal that leads to a map
             if (!await Wait.For(() =>
                 {
-                    var mapPortal = LokiPoe.ObjectManager.Objects.Closest<Portal>(p => p.IsTargetable && p.LeadsTo(a => a.IsMap));
-                    return mapPortal != null;
+                    var p = portal.Fresh();
+                    return p.IsTargetable && p.LeadsTo(a => a.IsMap);
                 },
                 "new map portals spawning", 500, 15000))
             {
@@ -116,16 +117,7 @@ namespace Default.MapBot
 
             await Wait.SleepSafe(500);
 
-            // Get fresh reference to the map portal
-            var mapPortalToEnter = LokiPoe.ObjectManager.Objects.Closest<Portal>(p => p.IsTargetable && p.LeadsTo(a => a.IsMap));
-            if (mapPortalToEnter == null)
-            {
-                GlobalLog.Error("[OpenMapTask] Failed to find map portal after spawning.");
-                ErrorManager.ReportError();
-                return true;
-            }
-
-            if (!await TakeMapPortal(mapPortalToEnter))
+            if (!await TakeMapPortal(portal))
                 ErrorManager.ReportError();
 
             return true;
@@ -295,21 +287,75 @@ namespace Default.MapBot
 
                 GlobalLog.Debug($"[OpenMapTask] Take portal to map attempt: {i}/{attempts}");
 
-                // Get fresh portal reference each attempt
-                var freshPortal = LokiPoe.ObjectManager.Objects.Closest<Portal>(p => p.IsTargetable && p.LeadsTo(a => a.IsMap));
-                if (freshPortal == null)
-                {
-                    GlobalLog.Error("[OpenMapTask] No map portal found.");
-                    await Wait.SleepSafe(1000);
-                    continue;
-                }
-
-                if (await PlayerAction.TakePortal(freshPortal))
+                if (await PlayerAction.TakePortal(portal))
                     return true;
 
                 await Wait.SleepSafe(1000);
             }
             return false;
+        }
+
+        private static async Task AddScarabsToDevice()
+        {
+            var settings = ScarabSettings.Instance;
+            var selectedScarabs = settings.SelectedScarabs;
+
+            if (selectedScarabs.Count == 0)
+            {
+                GlobalLog.Debug("[OpenMapTask] No scarabs selected.");
+                return;
+            }
+
+            GlobalLog.Info($"[OpenMapTask] Adding {selectedScarabs.Count} scarab(s) to map device.");
+
+            // Count how many of each scarab we need
+            var scarabCounts = new System.Collections.Generic.Dictionary<string, int>();
+            foreach (var scarab in selectedScarabs)
+            {
+                if (!scarabCounts.ContainsKey(scarab))
+                    scarabCounts[scarab] = 0;
+                scarabCounts[scarab]++;
+            }
+
+            // Check limits and adjust counts
+            foreach (var kvp in scarabCounts.ToList())
+            {
+                int limit = ScarabSettings.GetScarabLimit(kvp.Key);
+                if (kvp.Value > limit)
+                {
+                    GlobalLog.Warn($"[OpenMapTask] {kvp.Key} has limit of {limit}, but {kvp.Value} selected. Reducing to {limit}.");
+                    scarabCounts[kvp.Key] = limit;
+                }
+            }
+
+            // Find and add scarabs from inventory
+            foreach (var kvp in scarabCounts)
+            {
+                string scarabName = kvp.Key;
+                int countNeeded = kvp.Value;
+
+                for (int i = 0; i < countNeeded; i++)
+                {
+                    var scarab = Inventories.InventoryItems.Find(item => item.Name == scarabName);
+                    if (scarab == null)
+                    {
+                        GlobalLog.Warn($"[OpenMapTask] Could not find {scarabName} in inventory. Skipping.");
+                        continue;
+                    }
+
+                    GlobalLog.Debug($"[OpenMapTask] Adding {scarabName} to map device.");
+
+                    if (!await PlayerAction.TryTo(() => PlaceIntoDevice(scarab.LocationTopLeft), $"Place {scarabName} into device", 3))
+                    {
+                        GlobalLog.Error($"[OpenMapTask] Failed to add {scarabName} to map device.");
+                        continue;
+                    }
+
+                    await Wait.SleepSafe(200);
+                }
+            }
+
+            GlobalLog.Info("[OpenMapTask] Finished adding scarabs.");
         }
 
         public MessageResult Message(Message message)

@@ -145,6 +145,8 @@ namespace Default.EXtensions.CommonTasks
             {
                 var itemType = item.Type.ItemType;
                 var metadata = item.Metadata;
+                
+                GlobalLog.Debug($"[StashTask] Assigning tab for item: {item.FullName}, Type: {itemType}, Metadata: {metadata}");
 
                 if (itemType == ItemTypes.Currency)
                 {
@@ -179,7 +181,11 @@ namespace Default.EXtensions.CommonTasks
                 }
                 if (itemType == ItemTypes.Map)
                 {
+                    GlobalLog.Debug($"[StashTask] Map detected: {item.FullName}, assigning to Map tab");
+                    var mapTabs = Settings.Instance.GetTabsForCategory(Settings.StashingCategory.Map);
+                    GlobalLog.Debug($"[StashTask] Map tabs configured: {string.Join(", ", mapTabs)}");
                     item.StashTab = GetTabForStashing(Settings.StashingCategory.Map, metadata);
+                    GlobalLog.Debug($"[StashTask] Map will be stashed to tab: {item.StashTab}");
                     continue;
                 }
                 if (itemType == ItemTypes.MapFragment)
