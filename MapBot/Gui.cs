@@ -254,5 +254,32 @@ namespace Default.MapBot
                 return value.Equals(true) ? parameter : Binding.DoNothing;
             }
         }
+
+        public class IntToBoolConverter : IValueConverter
+        {
+            public static readonly IntToBoolConverter Instance = new IntToBoolConverter();
+
+            public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+            {
+                if (value == null || parameter == null)
+                    return false;
+                
+                int intValue = (int)value;
+                int paramValue = int.Parse(parameter.ToString());
+                return intValue == paramValue;
+            }
+
+            public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+            {
+                if (value == null || parameter == null)
+                    return Binding.DoNothing;
+                
+                bool isChecked = (bool)value;
+                if (isChecked)
+                    return int.Parse(parameter.ToString());
+                
+                return Binding.DoNothing;
+            }
+        }
     }
 }
