@@ -543,6 +543,52 @@ namespace Default.EXtensions
         [AreaId("MapWorldsNecropolisUnique")]
         public static readonly string DeathandTaxes;
 
+        // New maps for current league
+        [AreaId("MapWorldsGlacier")]
+        public static readonly string Glacier;
+
+        [AreaId("MapWorldsCrater")]
+        public static readonly string Crater;
+
+        [AreaId("MapWorldsSilo")]
+        public static readonly string Silo;
+
+        [AreaId("MapWorldsBrambleValley")]
+        public static readonly string BrambleValley;
+
+        [AreaId("MapWorldsGraveTrough")]
+        public static readonly string GraveTrough;
+
+        [AreaId("MapWorldsPrimordialBlocks")]
+        public static readonly string PrimordialBlocks;
+
+        [AreaId("MapWorldsFrozenCabins")]
+        public static readonly string FrozenCabins;
+
+        [AreaId("MapWorldsAcidCaverns")]
+        public static readonly string AcidCaverns;
+
+        [AreaId("MapWorldsCrimsonTownship")]
+        public static readonly string CrimsonTownship;
+
+        [AreaId("MapWorldsForkingRiver")]
+        public static readonly string ForkingRiver;
+
+        [AreaId("MapWorldsSanctuary")]
+        public static readonly string Sanctuary;
+
+        [AreaId("MapWorldsCitadel")]
+        public static readonly string Citadel;
+
+        [AreaId("MapWorldsFortress")]
+        public static readonly string Fortress;
+
+        [AreaId("MapWorldsAbomination")]
+        public static readonly string Abomination;
+
+        [AreaId("MapWorldsZiggurat")]
+        public static readonly string Ziggurat;
+
 
         static MapNames()
         {
