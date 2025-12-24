@@ -146,20 +146,39 @@ namespace Default.MapBot
                 Slots6Radio.Checked += (s, e) => { settings.MapDeviceSlots = 6; };
             }
             
+            // Get the scarab list
+            var scarabList = ScarabSettings.AvailableScarabs;
+            
             // Setup scarab combo boxes
-            SetupScarabComboBox(ScarabSlot1ComboBox, settings.ScarabSlot1, v => settings.ScarabSlot1 = v);
-            SetupScarabComboBox(ScarabSlot2ComboBox, settings.ScarabSlot2, v => settings.ScarabSlot2 = v);
-            SetupScarabComboBox(ScarabSlot3ComboBox, settings.ScarabSlot3, v => settings.ScarabSlot3 = v);
-            SetupScarabComboBox(ScarabSlot4ComboBox, settings.ScarabSlot4, v => settings.ScarabSlot4 = v);
-            SetupScarabComboBox(ScarabSlot5ComboBox, settings.ScarabSlot5, v => settings.ScarabSlot5 = v);
+            SetupScarabComboBox(ScarabSlot1ComboBox, scarabList, settings.ScarabSlot1, v => settings.ScarabSlot1 = v);
+            SetupScarabComboBox(ScarabSlot2ComboBox, scarabList, settings.ScarabSlot2, v => settings.ScarabSlot2 = v);
+            SetupScarabComboBox(ScarabSlot3ComboBox, scarabList, settings.ScarabSlot3, v => settings.ScarabSlot3 = v);
+            SetupScarabComboBox(ScarabSlot4ComboBox, scarabList, settings.ScarabSlot4, v => settings.ScarabSlot4 = v);
+            SetupScarabComboBox(ScarabSlot5ComboBox, scarabList, settings.ScarabSlot5, v => settings.ScarabSlot5 = v);
         }
         
-        private void SetupScarabComboBox(ComboBox comboBox, string currentValue, Action<string> setter)
+        private void SetupScarabComboBox(ComboBox comboBox, System.Collections.Generic.List<string> items, string currentValue, Action<string> setter)
         {
             if (comboBox == null) return;
             
-            comboBox.ItemsSource = ScarabSettings.AvailableScarabs;
-            comboBox.SelectedItem = currentValue;
+            // Clear and add items manually
+            comboBox.Items.Clear();
+            foreach (var item in items)
+            {
+                comboBox.Items.Add(item);
+            }
+            
+            // Set selected value
+            if (!string.IsNullOrEmpty(currentValue) && comboBox.Items.Contains(currentValue))
+            {
+                comboBox.SelectedItem = currentValue;
+            }
+            else
+            {
+                comboBox.SelectedIndex = 0; // Select "None"
+            }
+            
+            // Handle selection change
             comboBox.SelectionChanged += (s, e) =>
             {
                 if (comboBox.SelectedItem != null)

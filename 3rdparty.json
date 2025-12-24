@@ -89,6 +89,7 @@
     "MapBot\\SpecialObjectTask.cs",
     "MapBot\\Statistics.cs",
     "MapBot\\TakeMapTask.cs",
+    "MapBot\\TakeScarabTask.cs",
     "MapBot\\TrackMobTask.cs",
     "MapBot\\TransitionTriggerTask.cs",
     "MapBot\\TravelToHideoutTask.cs",

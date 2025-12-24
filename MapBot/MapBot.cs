@@ -294,6 +294,7 @@ namespace Default.MapBot
             _taskManager.Add(new SextantTask());
             _taskManager.Add(new SellMapTask());
             _taskManager.Add(new TakeMapTask());
+            _taskManager.Add(new TakeScarabTask());
             _taskManager.Add(new TravelToLabTask());
             _taskManager.Add(new CastAuraTask());
             _taskManager.Add(new OpenMapTask());
