@@ -198,11 +198,20 @@ namespace Default.MapBot
                 GlobalLog.Error("[OpenMapTask] Unexpected error. There is no map in the Map Device.");
                 return false;
             }
+            
+            GlobalLog.Debug($"[OpenMapTask] Found map in device: {map.Name}");
+            GlobalLog.Debug($"[OpenMapTask] Current area is hideout: {World.CurrentArea.IsHideoutArea}");
 
             LokiPoe.InGameState.ActivateResult activated;
 
             if (World.CurrentArea.IsHideoutArea)
             {
+                GlobalLog.Debug("[OpenMapTask] Using MasterDeviceUi.Activate()");
+                
+                // Check if MasterDeviceUi is available
+                var masterDevice = LokiPoe.InGameState.MasterDeviceUi;
+                GlobalLog.Debug($"[OpenMapTask] MasterDeviceUi.IsOpened: {masterDevice?.IsOpened}");
+                
                 if (MapSettings.Instance.MapDict.TryGetValue(map.CleanName(), out var data) && data.ZanaMod > 0)
                 {
                     var modIndex = data.ZanaMod;
@@ -228,13 +237,17 @@ namespace Default.MapBot
                 }
                 else
                 {
+                    GlobalLog.Debug("[OpenMapTask] No Zana mod specified, activating normally.");
                     activated = LokiPoe.InGameState.MasterDeviceUi.Activate();
                 }
             }
             else
             {
+                GlobalLog.Debug("[OpenMapTask] Using MapDeviceUi.Activate()");
                 activated = LokiPoe.InGameState.MapDeviceUi.Activate();
             }
+
+            GlobalLog.Debug($"[OpenMapTask] Activate result: {activated}");
 
             if (activated != LokiPoe.InGameState.ActivateResult.None)
             {
