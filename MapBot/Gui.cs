@@ -265,59 +265,67 @@ namespace Default.MapBot
         {
             if (parent == null) return null;
             
-            // First try Visual Tree
-            int childCount = System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent);
-            for (int i = 0; i < childCount; i++)
+            try
             {
-                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
-                
-                if (child is T element && element.Name == name)
-                    return element;
-                
-                var result = FindDescendant<T>(child, name);
-                if (result != null) return result;
-            }
-            
-            // Also try Logical Tree for elements not in visual tree yet
-            foreach (var child in LogicalTreeHelper.GetChildren(parent))
-            {
-                if (child is T element && element.Name == name)
-                    return element;
-                
-                if (child is DependencyObject depChild)
+                // Try Visual Tree
+                int childCount = System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent);
+                for (int i = 0; i < childCount; i++)
                 {
-                    var result = FindDescendant<T>(depChild, name);
+                    var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+                    
+                    if (child is T element && element.Name == name)
+                        return element;
+                    
+                    var result = FindDescendant<T>(child, name);
                     if (result != null) return result;
                 }
+                
+                // Also try Logical Tree for elements not in visual tree yet (with safety checks)
+                foreach (var child in LogicalTreeHelper.GetChildren(parent))
+                {
+                    // Skip non-visual elements like ColumnDefinition, RowDefinition, etc.
+                    if (!(child is System.Windows.Media.Visual)) continue;
+                    
+                    if (child is T element && element.Name == name)
+                        return element;
+                    
+                    if (child is DependencyObject depChild)
+                    {
+                        var result = FindDescendant<T>(depChild, name);
+                        if (result != null) return result;
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore errors from iterating non-visual elements
             }
             
             return null;
         }
         
-        // Helper to find element by type when name doesn't work
+        // Helper to find element by type when name doesn't work - Visual Tree only
         private static System.Collections.Generic.List<T> FindAllDescendants<T>(DependencyObject parent) where T : FrameworkElement
         {
             var results = new System.Collections.Generic.List<T>();
             if (parent == null) return results;
             
-            int childCount = System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent);
-            for (int i = 0; i < childCount; i++)
+            try
             {
-                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
-                
-                if (child is T element)
-                    results.Add(element);
-                
-                results.AddRange(FindAllDescendants<T>(child));
+                int childCount = System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent);
+                for (int i = 0; i < childCount; i++)
+                {
+                    var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+                    
+                    if (child is T element)
+                        results.Add(element);
+                    
+                    results.AddRange(FindAllDescendants<T>(child));
+                }
             }
-            
-            foreach (var child in LogicalTreeHelper.GetChildren(parent))
+            catch
             {
-                if (child is T element && !results.Contains(element))
-                    results.Add(element);
-                
-                if (child is DependencyObject depChild)
-                    results.AddRange(FindAllDescendants<T>(depChild));
+                // Ignore errors
             }
             
             return results;
