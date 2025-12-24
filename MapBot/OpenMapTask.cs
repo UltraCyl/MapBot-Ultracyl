@@ -280,6 +280,13 @@ namespace Default.MapBot
         private static async Task AddScarabsToDevice()
         {
             var settings = ScarabSettings.Instance;
+            
+            if (!settings.UseScarabs)
+            {
+                GlobalLog.Debug("[OpenMapTask] Scarabs are disabled.");
+                return;
+            }
+            
             var selectedScarabs = settings.SelectedScarabs;
 
             if (selectedScarabs.Count == 0)
@@ -288,7 +295,50 @@ namespace Default.MapBot
                 return;
             }
 
-            GlobalLog.Info($"[OpenMapTask] Adding {selectedScarabs.Count} scarab(s) to map device.");
+            // Get the actual map device slot count from the game
+            // The inventory control should have the actual slot count
+            var deviceInventory = MapDevice.InventoryControl?.Inventory;
+            if (deviceInventory == null)
+            {
+                GlobalLog.Error("[OpenMapTask] Cannot access map device inventory to check slot count.");
+                return;
+            }
+            
+            // Count how many slots are available in the map device
+            // Map device inventory width tells us the slot count
+            int actualSlots = 0;
+            try
+            {
+                // Try to determine actual slots from the device
+                // The map device inventory should have a certain number of columns
+                var items = MapDevice.InventoryControl.Inventory.Items;
+                
+                // If we have a map already placed, we know at least that works
+                // We'll estimate based on configured value for now but add validation
+                actualSlots = settings.MapDeviceSlots;
+                
+                GlobalLog.Debug($"[OpenMapTask] Configured map device slots: {settings.MapDeviceSlots}");
+            }
+            catch (System.Exception ex)
+            {
+                GlobalLog.Error($"[OpenMapTask] Error checking map device slots: {ex.Message}");
+                actualSlots = settings.MapDeviceSlots;
+            }
+
+            // Validate: configured slots should match what user expects
+            int configuredSlots = settings.MapDeviceSlots;
+            int availableScarabSlots = configuredSlots - 1; // -1 for the map itself
+            
+            if (selectedScarabs.Count > availableScarabSlots)
+            {
+                GlobalLog.Error($"[OpenMapTask] SCARAB SLOT MISMATCH! You have selected {selectedScarabs.Count} scarab(s) but your configured map device ({configuredSlots} slots) only has {availableScarabSlots} slot(s) available for scarabs.");
+                GlobalLog.Error($"[OpenMapTask] Please check your Scarabs tab settings - make sure the Map Device Slots setting matches your in-game map device.");
+                GlobalLog.Error($"[OpenMapTask] Stopping bot to prevent issues.");
+                BotManager.Stop();
+                return;
+            }
+
+            GlobalLog.Info($"[OpenMapTask] Adding {selectedScarabs.Count} scarab(s) to map device. (Device: {configuredSlots} slots, Available for scarabs: {availableScarabSlots})");
 
             // Count how many of each scarab we need
             var scarabCounts = new System.Collections.Generic.Dictionary<string, int>();
@@ -310,6 +360,8 @@ namespace Default.MapBot
                 }
             }
 
+            int scarabsAdded = 0;
+            
             // Find and add scarabs from inventory
             foreach (var kvp in scarabCounts)
             {
@@ -318,14 +370,19 @@ namespace Default.MapBot
 
                 for (int i = 0; i < countNeeded; i++)
                 {
-                    var scarab = Inventories.InventoryItems.Find(item => item.Name == scarabName);
+                    var scarab = Inventories.InventoryItems.Find(item => item.Name != null && item.Name.Contains(scarabName.Replace(" Scarab", "")) && item.Name.Contains("Scarab"));
+                    if (scarab == null)
+                    {
+                        // Try exact match
+                        scarab = Inventories.InventoryItems.Find(item => item.Name == scarabName);
+                    }
                     if (scarab == null)
                     {
                         GlobalLog.Warn($"[OpenMapTask] Could not find {scarabName} in inventory. Skipping.");
                         continue;
                     }
 
-                    GlobalLog.Debug($"[OpenMapTask] Adding {scarabName} to map device.");
+                    GlobalLog.Debug($"[OpenMapTask] Adding {scarab.Name} to map device.");
 
                     if (!await PlayerAction.TryTo(() => PlaceIntoDevice(scarab.LocationTopLeft), $"Place {scarabName} into device", 3))
                     {
@@ -333,11 +390,12 @@ namespace Default.MapBot
                         continue;
                     }
 
+                    scarabsAdded++;
                     await Wait.SleepSafe(200);
                 }
             }
 
-            GlobalLog.Info("[OpenMapTask] Finished adding scarabs.");
+            GlobalLog.Info($"[OpenMapTask] Finished adding scarabs. Added {scarabsAdded}/{selectedScarabs.Count} scarab(s).");
         }
 
         public MessageResult Message(Message message)
