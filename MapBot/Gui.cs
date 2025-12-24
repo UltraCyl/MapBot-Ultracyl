@@ -16,6 +16,7 @@ namespace Default.MapBot
         private readonly ToolTip _toolTip = new ToolTip();
         private ICollectionView _mapCollectionView;
         private ICollectionView _affixCollectionView;
+        private bool _scarabControlsInitialized = false;
         
         internal TextBox MapSearchTextBox;
         internal DataGrid MapGrid;
@@ -80,7 +81,10 @@ namespace Default.MapBot
                             _mapCollectionView = CollectionViewSource.GetDefaultView(MapSettings.Instance.MapList);
                             _affixCollectionView = CollectionViewSource.GetDefaultView(AffixSettings.Instance.AffixList);
                             
-                            // Setup Scarab controls
+                            // Setup Scarab controls - use Loaded event to ensure visual tree is ready
+                            this.Loaded += (s, e) => SetupScarabControls();
+                            
+                            // Also try to setup immediately in case already loaded
                             SetupScarabControls();
                         }
                     }
@@ -108,9 +112,12 @@ namespace Default.MapBot
         
         private void SetupScarabControls()
         {
+            // Prevent double initialization
+            if (_scarabControlsInitialized) return;
+            
             var settings = ScarabSettings.Instance;
             
-            // Find scarab controls
+            // Find scarab controls - try multiple methods
             UseScarabsCheckBox = FindDescendant<CheckBox>(this, "UseScarabsCheckBox");
             Slots4Radio = FindDescendant<RadioButton>(this, "Slots4Radio");
             Slots5Radio = FindDescendant<RadioButton>(this, "Slots5Radio");
@@ -121,13 +128,26 @@ namespace Default.MapBot
             ScarabSlot4ComboBox = FindDescendant<ComboBox>(this, "ScarabSlot4ComboBox");
             ScarabSlot5ComboBox = FindDescendant<ComboBox>(this, "ScarabSlot5ComboBox");
             
-            // Setup UseScarabs checkbox
-            if (UseScarabsCheckBox != null)
+            // If we couldn't find the comboboxes, try again later (visual tree might not be ready)
+            if (ScarabSlot1ComboBox == null)
             {
-                UseScarabsCheckBox.IsChecked = settings.UseScarabs;
-                UseScarabsCheckBox.Checked += (s, e) => { settings.UseScarabs = true; };
-                UseScarabsCheckBox.Unchecked += (s, e) => { settings.UseScarabs = false; };
+                return;
             }
+            
+            _scarabControlsInitialized = true;
+            
+            // Also find the panel that contains the scarab options
+            var mapDeviceSlotsPanel = FindDescendant<StackPanel>(this, "MapDeviceSlotsPanel");
+            
+            // Get the scarab list
+            var scarabList = ScarabSettings.AvailableScarabs;
+            
+            // Setup scarab combo boxes FIRST (before checkbox events)
+            SetupScarabComboBox(ScarabSlot1ComboBox, scarabList, settings.ScarabSlot1, v => settings.ScarabSlot1 = v);
+            SetupScarabComboBox(ScarabSlot2ComboBox, scarabList, settings.ScarabSlot2, v => settings.ScarabSlot2 = v);
+            SetupScarabComboBox(ScarabSlot3ComboBox, scarabList, settings.ScarabSlot3, v => settings.ScarabSlot3 = v);
+            SetupScarabComboBox(ScarabSlot4ComboBox, scarabList, settings.ScarabSlot4, v => settings.ScarabSlot4 = v);
+            SetupScarabComboBox(ScarabSlot5ComboBox, scarabList, settings.ScarabSlot5, v => settings.ScarabSlot5 = v);
             
             // Setup Map Device Slots radio buttons
             if (Slots4Radio != null)
@@ -146,20 +166,52 @@ namespace Default.MapBot
                 Slots6Radio.Checked += (s, e) => { settings.MapDeviceSlots = 6; };
             }
             
-            // Get the scarab list
-            var scarabList = ScarabSettings.AvailableScarabs;
+            // Helper method to update enabled state of all scarab controls
+            Action<bool> updateControlsEnabled = (enabled) =>
+            {
+                if (Slots4Radio != null) Slots4Radio.IsEnabled = enabled;
+                if (Slots5Radio != null) Slots5Radio.IsEnabled = enabled;
+                if (Slots6Radio != null) Slots6Radio.IsEnabled = enabled;
+                if (ScarabSlot1ComboBox != null) ScarabSlot1ComboBox.IsEnabled = enabled;
+                if (ScarabSlot2ComboBox != null) ScarabSlot2ComboBox.IsEnabled = enabled;
+                if (ScarabSlot3ComboBox != null) ScarabSlot3ComboBox.IsEnabled = enabled;
+                if (ScarabSlot4ComboBox != null) ScarabSlot4ComboBox.IsEnabled = enabled;
+                if (ScarabSlot5ComboBox != null) ScarabSlot5ComboBox.IsEnabled = enabled;
+                if (mapDeviceSlotsPanel != null) mapDeviceSlotsPanel.IsEnabled = enabled;
+            };
             
-            // Setup scarab combo boxes
-            SetupScarabComboBox(ScarabSlot1ComboBox, scarabList, settings.ScarabSlot1, v => settings.ScarabSlot1 = v);
-            SetupScarabComboBox(ScarabSlot2ComboBox, scarabList, settings.ScarabSlot2, v => settings.ScarabSlot2 = v);
-            SetupScarabComboBox(ScarabSlot3ComboBox, scarabList, settings.ScarabSlot3, v => settings.ScarabSlot3 = v);
-            SetupScarabComboBox(ScarabSlot4ComboBox, scarabList, settings.ScarabSlot4, v => settings.ScarabSlot4 = v);
-            SetupScarabComboBox(ScarabSlot5ComboBox, scarabList, settings.ScarabSlot5, v => settings.ScarabSlot5 = v);
+            // Setup UseScarabs checkbox
+            if (UseScarabsCheckBox != null)
+            {
+                UseScarabsCheckBox.IsChecked = settings.UseScarabs;
+                
+                // Set initial enabled state
+                updateControlsEnabled(settings.UseScarabs);
+                
+                UseScarabsCheckBox.Checked += (s, e) => 
+                { 
+                    settings.UseScarabs = true;
+                    updateControlsEnabled(true);
+                };
+                UseScarabsCheckBox.Unchecked += (s, e) => 
+                { 
+                    settings.UseScarabs = false;
+                    updateControlsEnabled(false);
+                };
+            }
         }
         
         private void SetupScarabComboBox(ComboBox comboBox, System.Collections.Generic.List<string> items, string currentValue, Action<string> setter)
         {
-            if (comboBox == null) return;
+            if (comboBox == null) 
+            {
+                return;
+            }
+            
+            if (items == null || items.Count == 0)
+            {
+                return;
+            }
             
             // Clear and add items manually
             comboBox.Items.Clear();
@@ -173,7 +225,7 @@ namespace Default.MapBot
             {
                 comboBox.SelectedItem = currentValue;
             }
-            else
+            else if (comboBox.Items.Count > 0)
             {
                 comboBox.SelectedIndex = 0; // Select "None"
             }
@@ -213,6 +265,7 @@ namespace Default.MapBot
         {
             if (parent == null) return null;
             
+            // First try Visual Tree
             int childCount = System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent);
             for (int i = 0; i < childCount; i++)
             {
@@ -225,7 +278,49 @@ namespace Default.MapBot
                 if (result != null) return result;
             }
             
+            // Also try Logical Tree for elements not in visual tree yet
+            foreach (var child in LogicalTreeHelper.GetChildren(parent))
+            {
+                if (child is T element && element.Name == name)
+                    return element;
+                
+                if (child is DependencyObject depChild)
+                {
+                    var result = FindDescendant<T>(depChild, name);
+                    if (result != null) return result;
+                }
+            }
+            
             return null;
+        }
+        
+        // Helper to find element by type when name doesn't work
+        private static System.Collections.Generic.List<T> FindAllDescendants<T>(DependencyObject parent) where T : FrameworkElement
+        {
+            var results = new System.Collections.Generic.List<T>();
+            if (parent == null) return results;
+            
+            int childCount = System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < childCount; i++)
+            {
+                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+                
+                if (child is T element)
+                    results.Add(element);
+                
+                results.AddRange(FindAllDescendants<T>(child));
+            }
+            
+            foreach (var child in LogicalTreeHelper.GetChildren(parent))
+            {
+                if (child is T element && !results.Contains(element))
+                    results.Add(element);
+                
+                if (child is DependencyObject depChild)
+                    results.AddRange(FindAllDescendants<T>(depChild));
+            }
+            
+            return results;
         }
 
         private bool MapFilter(object obj)
