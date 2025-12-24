@@ -33,7 +33,12 @@ namespace Default.MapBot
             var cleanName = map.CleanName();
 
             if (!MapDict.TryGetValue(cleanName, out var data))
-                return int.MinValue;
+            {
+                // Unknown map - give it a default priority based on tier
+                // Higher tier = higher priority
+                GlobalLog.Debug($"[MapExtensions] Map \"{cleanName}\" not in MapDict, using tier-based priority.");
+                return map.MapTier * 10; // Tier 16 = priority 160, etc.
+            }
 
             if (GeneralSettings.AtlasExplorationEnabled &&
                 !data.IgnoredBossroom &&
@@ -56,7 +61,17 @@ namespace Default.MapBot
 
         public static bool Ignored(this Item map)
         {
-            return !MapDict.TryGetValue(map.CleanName(), out MapData data) || data.Ignored;
+            var cleanName = map.CleanName();
+            
+            // If map is not in our dictionary, DON'T ignore it - let it be run
+            // This allows running maps that aren't in our predefined list
+            if (!MapDict.TryGetValue(cleanName, out MapData data))
+            {
+                GlobalLog.Debug($"[MapExtensions] Map \"{cleanName}\" not in MapDict, allowing it to run.");
+                return false;
+            }
+            
+            return data.Ignored;
         }
 
         public static string GetBannedAffix(this Item map)
